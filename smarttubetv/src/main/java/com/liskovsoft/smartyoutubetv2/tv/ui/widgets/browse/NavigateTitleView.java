@@ -148,12 +148,13 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mBrandingVisibility = (flags & BRANDING_VIEW_VISIBLE) == BRANDING_VIEW_VISIBLE
                 ? View.VISIBLE : View.INVISIBLE;
 
-        if (mIsSearchOrbEnabled) {
+        // Search and Profile icons moved to side navigation - always hide them
+        if (mSearchOrbView != null) {
             mSearchOrbView.setVisibility(View.GONE);
         }
 
-        if (mIsAccountViewEnabled) {
-            mAccountView.setVisibility(mSearchVisibility);
+        if (mAccountView != null) {
+            mAccountView.setVisibility(View.GONE);
         }
 
         if (mIsLanguageViewEnabled) {
@@ -231,8 +232,13 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mIsLanguageViewEnabled = mainUIData.isTopButtonEnabled(MainUIData.TOP_BUTTON_CHANGE_LANGUAGE);
         mIsGlobalClockEnabled = GeneralData.instance(getContext()).isGlobalClockEnabled();
 
-        mSearchOrbView.setVisibility(mIsSearchOrbEnabled ? View.VISIBLE : View.GONE);
-        mAccountView.setVisibility(mIsAccountViewEnabled ? View.VISIBLE : View.GONE);
+        // Search and Profile icons moved to side navigation - always hide them
+        if (mSearchOrbView != null) {
+            mSearchOrbView.setVisibility(View.GONE);
+        }
+        if (mAccountView != null) {
+            mAccountView.setVisibility(View.GONE);
+        }
         mLanguageView.setVisibility(mIsLanguageViewEnabled ? View.VISIBLE : View.GONE);
         mGlobalClock.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);
         mGlobalDate.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);

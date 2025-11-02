@@ -432,6 +432,8 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         android.widget.ImageButton btnPlaylist = container.findViewById(R.id.btn_playlist);
         android.widget.ImageButton btnHistory = container.findViewById(R.id.btn_history);
         android.widget.ImageButton btnSettings = container.findViewById(R.id.btn_settings);
+        android.widget.ImageButton btnSearch = container.findViewById(R.id.btn_search);
+        android.widget.ImageButton btnProfile = container.findViewById(R.id.btn_profile);
         
         // Setup button focus order
         android.view.View.OnFocusChangeListener buttonFocusListener = (v, hasFocus) -> {
@@ -511,10 +513,68 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
             btnSettings.setFocusable(true);
             btnSettings.setFocusableInTouchMode(true);
             btnSettings.setClickable(true);
-            // Set next focus - wrap around
-            btnSettings.setNextFocusDownId(R.id.btn_home);
+            // Set next focus - down to Search
+            btnSettings.setNextFocusDownId(R.id.btn_search);
             btnSettings.setNextFocusUpId(R.id.btn_history);
             // Don't set NextFocusRightId - let OnFocusSearchListener handle it
+        }
+        
+        // Setup Search button
+        if (btnSearch != null) {
+            btnSearch.setVisibility(View.VISIBLE);
+            btnSearch.setAlpha(1.0f);
+            // Use search icon drawable
+            Drawable searchIcon = ContextCompat.getDrawable(getContext(), R.drawable.action_search);
+            if (searchIcon != null) {
+                btnSearch.setImageDrawable(searchIcon);
+            }
+            btnSearch.setColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);
+            btnSearch.setOnClickListener(v -> {
+                // Start search
+                SearchPresenter.instance(getActivity()).startSearch(null);
+            });
+            btnSearch.setOnFocusChangeListener(buttonFocusListener);
+            btnSearch.setFocusable(true);
+            btnSearch.setFocusableInTouchMode(true);
+            btnSearch.setClickable(true);
+            // Set next focus - down to Profile, up to Settings
+            btnSearch.setNextFocusDownId(R.id.btn_profile);
+            btnSearch.setNextFocusUpId(R.id.btn_settings);
+            // Don't set NextFocusRightId - let OnFocusSearchListener handle it
+        }
+        
+        // Setup Profile button
+        if (btnProfile != null) {
+            btnProfile.setVisibility(View.VISIBLE);
+            btnProfile.setAlpha(1.0f);
+            // Use account/profile icon drawable
+            Drawable profileIcon = ContextCompat.getDrawable(getContext(), R.drawable.browse_title_account);
+            if (profileIcon != null) {
+                btnProfile.setImageDrawable(profileIcon);
+            }
+            btnProfile.setColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);
+            btnProfile.setOnClickListener(v -> {
+                // Open account selection dialog
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter.instance(getContext()).nextAccountOrDialog();
+            });
+            btnProfile.setOnLongClickListener(v -> {
+                // Long click for account settings
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter.instance(getContext()).show();
+                return true;
+            });
+            btnProfile.setOnFocusChangeListener(buttonFocusListener);
+            btnProfile.setFocusable(true);
+            btnProfile.setFocusableInTouchMode(true);
+            btnProfile.setClickable(true);
+            // Set next focus - wrap around to Home, up to Search
+            btnProfile.setNextFocusDownId(R.id.btn_home);
+            btnProfile.setNextFocusUpId(R.id.btn_search);
+            // Don't set NextFocusRightId - let OnFocusSearchListener handle it
+        }
+        
+        // Update focus chain: Settings -> Search -> Profile -> Home (wrap around)
+        if (btnHome != null) {
+            btnHome.setNextFocusUpId(R.id.btn_profile);
         }
         
         // Update button highlights based on current section
@@ -772,17 +832,37 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         if (isShowingHeaders()) {
             backdrop.setImageDrawable(null);
             backdrop.setVisibility(View.INVISIBLE);
+            // Also hide overlay when sidebar is showing
+            if (backdrop.getParent() instanceof android.view.ViewGroup) {
+                android.view.ViewGroup overlayContainer = ((android.view.ViewGroup) backdrop.getParent()).findViewById(androidx.leanback.R.id.backdrop_info_overlay_container);
+                if (overlayContainer != null) {
+                    overlayContainer.setVisibility(View.GONE);
+                }
+            }
             return;
         }
 
         boolean isHome = BrowsePresenter.instance(getContext()).isHomeSection();
-        // Reset card/grid sizing caches so Home and non-Home recalc their exact spacing
-        com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper.invalidateCaches();
-        if (isHome) {
-            backdrop.setVisibility(View.VISIBLE);
-        } else {
+        // Keep backdrop visible in all sections to maintain consistent layout (60/40 ratio)
+        // This prevents layout reset when switching between sections
+        backdrop.setVisibility(View.VISIBLE);
+        
+        // Hide backdrop info overlay in non-Home sections
+        if (backdrop.getParent() instanceof android.view.ViewGroup) {
+            android.view.ViewGroup overlayContainer = ((android.view.ViewGroup) backdrop.getParent()).findViewById(androidx.leanback.R.id.backdrop_info_overlay_container);
+            if (overlayContainer != null) {
+                overlayContainer.setVisibility(isHome ? View.VISIBLE : View.GONE);
+            }
+        }
+        
+        if (!isHome) {
+            // For non-Home sections, use a dark solid color to maintain layout consistency
+            // Home backdrop will be set by video selection
             backdrop.setImageDrawable(null);
-            backdrop.setVisibility(View.INVISIBLE); // Use INVISIBLE to maintain layout space
+            backdrop.setBackgroundColor(0xFF1a1a1a); // Dark background
+        } else {
+            // Clear background color so image shows through
+            backdrop.setBackgroundColor(0x00000000); // Transparent background
         }
     }
 

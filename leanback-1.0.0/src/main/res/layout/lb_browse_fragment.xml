@@ -47,11 +47,26 @@
                     android:visibility="visible"
                     android:contentDescription="@string/browse_backdrop" />
 
-                <!-- Gradient overlay to blend backdrop with rows -->
+                <!-- Gradient overlay to blend backdrop with rows (bottom) -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/backdrop_bottom_gradient" />
+
+                <!-- Left-side gradient overlay for backdrop info text readability -->
+                <View
+                    android:layout_width="500dp"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="@drawable/backdrop_left_gradient" />
+
+                <!-- TMDB Movie Info Overlay (Title and Description) - Added programmatically -->
+                <FrameLayout
+                    android:id="@+id/backdrop_info_overlay_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:visibility="gone" />
 
             </FrameLayout>
 

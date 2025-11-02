@@ -33,6 +33,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.browse.interfaces.VideoSection;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.UriBackgroundManager;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
+import com.liskovsoft.smartyoutubetv2.tv.R;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -53,9 +54,6 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     private int mSelectedRowIndex = -1;
     private ChannelHeaderCallback mChannelHeaderCallback;
     
-    // Cache Home alignment settings to restore them when returning from other sections
-    private int mCachedHomeWindowAlignOffset = -1;
-    private int mCachedHomeRowsHeight = -1;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -139,166 +137,101 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                 android.util.DisplayMetrics dm = new android.util.DisplayMetrics();
                 getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
 
-                // Decide layout depending on whether we're on Home
-                com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter bp = com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter.instance(getContext());
-                boolean isHome = bp.getCurrentSection() == null || bp.isHomeSection();
-
-                android.widget.ImageView backdrop = null;
-                android.view.View browseFrame = getActivity().findViewById(androidx.leanback.R.id.browse_frame);
-                if (browseFrame != null) {
-                    backdrop = browseFrame.findViewById(androidx.leanback.R.id.backdrop_image);
-                }
-
-                if (!isHome) {
-                    // Non-Home: hide backdrop but keep space to maintain consistent layout measurements
-                    if (backdrop != null) {
-                        backdrop.setImageDrawable(null);
-                        backdrop.setVisibility(android.view.View.INVISIBLE);
-                    }
-                    // Use full screen height for rows in non-Home sections
-                    int screenHeightPx = dm.heightPixels;
-                    // Don't modify rowsHeightHolder[0] - keep previous value for when returning to Home
-                    if (mRowPresenter != null) {
-                        mRowPresenter.setRowHeight(screenHeightPx);
-                        mRowPresenter.setExpandedRowHeight(screenHeightPx);
-                    }
-                    gridView.setClipToPadding(false);
-                    gridView.setItemAlignmentOffset(0);
-                    gridView.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
-                    gridView.setWindowAlignmentOffset(0);
-                    gridView.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-                    gridView.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_LOW_EDGE);
-                } else {
-                    // Home: show backdrop with rows overlapping on top
-                    if (backdrop != null) {
-                        backdrop.setVisibility(android.view.View.VISIBLE);
-                    }
-                    
-                    // Apply cached alignment settings immediately if available
-                    // This prevents cards from sticking to top when returning from other sections
-                    if (mCachedHomeWindowAlignOffset > 0 && mCachedHomeRowsHeight > 0) {
-                        gridView.setClipToPadding(false);
-                        gridView.setClipChildren(false);
-                        gridView.setItemAlignmentOffset(0);
-                        gridView.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
-                        gridView.setWindowAlignmentOffset(mCachedHomeWindowAlignOffset);
-                        gridView.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-                        gridView.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_NO_EDGE);
-                        if (mRowPresenter != null) {
-                            int screenHeightPx = dm.heightPixels;
-                            mRowPresenter.setRowHeight(screenHeightPx);
-                            mRowPresenter.setExpandedRowHeight(screenHeightPx);
-                        }
-                    }
-                    
-                    // Position rows container to overlap backdrop
-                    // Rows container should take 40% from bottom, overlapping backdrop
-                    if (rowsContainer != null && rowsContainer.getParent() instanceof android.view.ViewGroup) {
-                        android.view.ViewGroup parentLayout = (android.view.ViewGroup) rowsContainer.getParent();
-                        if (parentLayout instanceof android.widget.FrameLayout) {
-                            // Set rows container to take 50% of screen height, starting at 50% from top
-                            // This extends from 50% to 100% (bottom), eliminating unused space
-                            int screenHeightPx = dm.heightPixels;
-                            int rowsHeightPx = (int) (screenHeightPx * 0.5f); // 50% of screen (extends to bottom)
+                // Use the same layout for ALL sections (60/40 ratio: backdrop/rows)
+                // This prevents layout reset when switching between sections
+                
+                // Position rows container to overlap backdrop - same for all sections
+                if (rowsContainer != null && rowsContainer.getParent() instanceof android.view.ViewGroup) {
+                    android.view.ViewGroup parentLayout = (android.view.ViewGroup) rowsContainer.getParent();
+                    if (parentLayout instanceof android.widget.FrameLayout) {
+                        // Set rows container to take 50% of screen height, starting at 50% from top
+                        // This extends from 50% to 100% (bottom), eliminating unused space
+                        int screenHeightPx = dm.heightPixels;
+                        int rowsHeightPx = (int) (screenHeightPx * 0.5f); // 50% of screen (extends to bottom)
+                        
+                        // Position rows container to start at 50% from top (transition line at 50%)
+                        // Container now extends from 50% to 100%, filling the bottom area completely
+                        int topMarginPx = (int) (screenHeightPx * 0.5f); // Start at 50% from top
+                        
+                        if (rowsContainer.getLayoutParams() instanceof android.widget.FrameLayout.LayoutParams) {
+                            android.widget.FrameLayout.LayoutParams rowsParams = 
+                                (android.widget.FrameLayout.LayoutParams) rowsContainer.getLayoutParams();
+                            rowsParams.height = rowsHeightPx;
+                            rowsParams.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+                            rowsParams.gravity = android.view.Gravity.NO_GRAVITY; // Use manual positioning
+                            rowsParams.topMargin = topMarginPx;
+                            rowsContainer.setLayoutParams(rowsParams);
                             
-                            // Position rows container to start at 50% from top (transition line at 50%)
-                            // Container now extends from 50% to 100%, filling the bottom area completely
-                            int topMarginPx = (int) (screenHeightPx * 0.5f); // Start at 50% from top
+                            // Ensure rows container is elevated to appear on top of backdrop
+                            rowsContainer.setElevation(4f);
                             
-                            if (rowsContainer.getLayoutParams() instanceof android.widget.FrameLayout.LayoutParams) {
-                                android.widget.FrameLayout.LayoutParams rowsParams = 
-                                    (android.widget.FrameLayout.LayoutParams) rowsContainer.getLayoutParams();
-                                rowsParams.height = rowsHeightPx;
-                                rowsParams.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-                                rowsParams.gravity = android.view.Gravity.NO_GRAVITY; // Use manual positioning
-                                rowsParams.topMargin = topMarginPx;
-                                rowsContainer.setLayoutParams(rowsParams);
-                                
-                                // Ensure rows container is elevated to appear on top of backdrop
-                                rowsContainer.setElevation(4f);
-                                
-                                // Cast to ViewGroup to set clip properties
-                                if (rowsContainer instanceof android.view.ViewGroup) {
-                                    android.view.ViewGroup rowsContainerGroup = (android.view.ViewGroup) rowsContainer;
-                                    rowsContainerGroup.setClipToPadding(false);
-                                    rowsContainerGroup.setClipChildren(false);
-                                }
+                            // Cast to ViewGroup to set clip properties
+                            if (rowsContainer instanceof android.view.ViewGroup) {
+                                android.view.ViewGroup rowsContainerGroup = (android.view.ViewGroup) rowsContainer;
+                                rowsContainerGroup.setClipToPadding(false);
+                                rowsContainerGroup.setClipChildren(false);
                             }
                         }
                     }
-                    
-                    // Wait for layout to adjust, then recalculate height and apply alignment
-                    if (rowsContainer != null) {
-                        final android.view.View rowsContainerFinal = rowsContainer;
-                        final androidx.leanback.widget.VerticalGridView gridViewFinal = gridView;
-                        rowsContainerFinal.post(() -> {
-                            rowsContainerFinal.post(() -> {
-                                // Re-measure after layout adjustment
-                                int newRowsHeight = rowsContainerFinal.getHeight();
-                                if (newRowsHeight > 0) {
-                                    rowsHeightHolder[0] = newRowsHeight;
-                                    
-                                    // Ensure grid view allows scrolling under backdrop
-                                    gridViewFinal.setClipToPadding(false);
-                                    gridViewFinal.setClipChildren(false);
-
-                                    if (mRowPresenter != null) {
-                                        // Make row height larger to allow scrolling under backdrop
-                                        // Use screen height so rows can scroll under the backdrop
-                                        int screenHeightPx2 = dm.heightPixels;
-                                        mRowPresenter.setRowHeight(screenHeightPx2);
-                                        mRowPresenter.setExpandedRowHeight(screenHeightPx2);
-                                    }
-
-                                    // Align rows at a fixed position within the container (not stuck at top)
-                                    // Use NO_EDGE alignment with an offset to center rows better within the container
-                                    gridViewFinal.setItemAlignmentOffset(0);
-                                    gridViewFinal.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
-                                    
-                                    // Set window alignment offset to position rows in the lower part of the container
-                                    // This prevents rows from stopping at the very top
-                                    int windowAlignOffset = (int) (newRowsHeight * 0.1f); // Position at 10% from top of container
-                                    gridViewFinal.setWindowAlignmentOffset(windowAlignOffset);
-                                    gridViewFinal.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-                                    gridViewFinal.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_NO_EDGE);
-                                    
-                                    // Cache alignment settings for future use when returning from other sections
-                                    mCachedHomeWindowAlignOffset = windowAlignOffset;
-                                    mCachedHomeRowsHeight = newRowsHeight;
-                                }
-                            });
-                        });
-                        return; // Exit early, will be handled by post
-                    }
-
-                    // Fallback if layout adjustment fails
-                    gridView.setClipToPadding(false);
-                    gridView.setClipChildren(false);
-                    if (mRowPresenter != null) {
-                        int screenHeightPx = dm.heightPixels;
-                        mRowPresenter.setRowHeight(screenHeightPx);
-                        mRowPresenter.setExpandedRowHeight(screenHeightPx);
-                    }
-                    gridView.setItemAlignmentOffset(0);
-                    gridView.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
-                    
-                    // Use NO_EDGE alignment for better row positioning
-                    // Use cached values if available, otherwise calculate from current height
-                    int windowAlignOffset;
-                    if (mCachedHomeWindowAlignOffset > 0) {
-                        // Use cached alignment offset
-                        windowAlignOffset = mCachedHomeWindowAlignOffset;
-                    } else {
-                        int fallbackHeight = rowsHeightHolder[0] > 0 ? rowsHeightHolder[0] : (int) (dm.heightPixels * 0.5f);
-                        windowAlignOffset = (int) (fallbackHeight * 0.1f); // Position at 10% from top
-                        // Cache the calculated offset
-                        mCachedHomeWindowAlignOffset = windowAlignOffset;
-                        mCachedHomeRowsHeight = fallbackHeight;
-                    }
-                    gridView.setWindowAlignmentOffset(windowAlignOffset);
-                    gridView.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-                    gridView.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_NO_EDGE);
                 }
+                
+                // Wait for layout to adjust, then apply alignment - same for all sections
+                if (rowsContainer != null) {
+                    final android.view.View rowsContainerFinal = rowsContainer;
+                    final androidx.leanback.widget.VerticalGridView gridViewFinal = gridView;
+                    rowsContainerFinal.post(() -> {
+                        rowsContainerFinal.post(() -> {
+                            // Re-measure after layout adjustment
+                            int newRowsHeight = rowsContainerFinal.getHeight();
+                            if (newRowsHeight > 0) {
+                                rowsHeightHolder[0] = newRowsHeight;
+                                
+                                // Ensure grid view allows scrolling under backdrop
+                                gridViewFinal.setClipToPadding(false);
+                                gridViewFinal.setClipChildren(false);
+
+                                if (mRowPresenter != null) {
+                                    // Make row height larger to allow scrolling under backdrop
+                                    // Use screen height so rows can scroll under the backdrop
+                                    int screenHeightPx2 = dm.heightPixels;
+                                    mRowPresenter.setRowHeight(screenHeightPx2);
+                                    mRowPresenter.setExpandedRowHeight(screenHeightPx2);
+                                }
+
+                                // Align rows at a fixed position within the container (not stuck at top)
+                                // Use NO_EDGE alignment with an offset to center rows better within the container
+                                gridViewFinal.setItemAlignmentOffset(0);
+                                gridViewFinal.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
+                                
+                                // Set window alignment offset to position rows in the lower part of the container
+                                // This prevents rows from stopping at the very top
+                                int windowAlignOffset = (int) (newRowsHeight * 0.1f); // Position at 10% from top of container
+                                gridViewFinal.setWindowAlignmentOffset(windowAlignOffset);
+                                gridViewFinal.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
+                                gridViewFinal.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_NO_EDGE);
+                            }
+                        });
+                    });
+                    return; // Exit early, will be handled by post
+                }
+
+                // Fallback if layout adjustment fails
+                gridView.setClipToPadding(false);
+                gridView.setClipChildren(false);
+                if (mRowPresenter != null) {
+                    int screenHeightPx = dm.heightPixels;
+                    mRowPresenter.setRowHeight(screenHeightPx);
+                    mRowPresenter.setExpandedRowHeight(screenHeightPx);
+                }
+                gridView.setItemAlignmentOffset(0);
+                gridView.setItemAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
+                
+                // Use NO_EDGE alignment for better row positioning
+                int fallbackHeight = rowsHeightHolder[0] > 0 ? rowsHeightHolder[0] : (int) (dm.heightPixels * 0.5f);
+                int windowAlignOffset = (int) (fallbackHeight * 0.1f); // Position at 10% from top
+                gridView.setWindowAlignmentOffset(windowAlignOffset);
+                gridView.setWindowAlignmentOffsetPercent(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
+                gridView.setWindowAlignment(androidx.leanback.widget.VerticalGridView.WINDOW_ALIGN_NO_EDGE);
             };
 
             // Kick off now; if height is zero, listener above will retry once ready
@@ -315,21 +248,8 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     @Override
     public void onResume() {
         super.onResume();
-        // Reapply alignment when returning from other sections
-        // For Home, delay slightly to ensure backdrop visibility change has taken effect
-        com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter bp = com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter.instance(getContext());
-        boolean isHome = bp.getCurrentSection() == null || bp.isHomeSection();
-        if (isHome && getView() != null) {
-            // Wait for layout pass to complete after backdrop becomes visible
-            getView().post(() -> {
-                getView().post(() -> {
-                    // Double post ensures layout is fully settled
-                    applyRowAlignment();
-                });
-            });
-        } else {
-            applyRowAlignment();
-        }
+        // Apply alignment - same for all sections since we use uniform layout
+        applyRowAlignment();
 
         // Also hide headers to avoid lingering sidebar
         try {
@@ -599,22 +519,48 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
             } catch (Throwable ignored) {
             }
             if (item instanceof Video) {
-                // Update upper-half backdrop ImageView
+                // Update upper-half backdrop ImageView and show TMDB info
                 if (getActivity() != null) {
                     android.view.View browseFrame = getActivity().findViewById(androidx.leanback.R.id.browse_frame);
-                    if (browseFrame != null) {
-                        android.widget.ImageView backdrop = browseFrame.findViewById(androidx.leanback.R.id.backdrop_image);
-                        if (backdrop != null) {
-                            com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter bp2 = com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter.instance(getContext());
-                            boolean isHome = bp2.getCurrentSection() == null || bp2.isHomeSection();
-                            if (!isHome) {
-                                // Hide backdrop but keep space to maintain consistent layout
-                                backdrop.setImageDrawable(null);
-                                backdrop.setVisibility(android.view.View.INVISIBLE);
-                                return;
+                    if (browseFrame != null && browseFrame instanceof android.view.ViewGroup) {
+                        android.view.ViewGroup browseFrameGroup = (android.view.ViewGroup) browseFrame;
+                        android.widget.ImageView backdrop = browseFrameGroup.findViewById(androidx.leanback.R.id.backdrop_image);
+                        
+                        // Find info overlay container - it's in the same parent as backdrop_image
+                        android.view.ViewGroup overlayContainer = null;
+                        if (backdrop != null && backdrop.getParent() instanceof android.view.ViewGroup) {
+                            overlayContainer = ((android.view.ViewGroup) backdrop.getParent()).findViewById(androidx.leanback.R.id.backdrop_info_overlay_container);
+                        }
+                        android.view.View infoOverlay = null;
+                        if (overlayContainer != null) {
+                            // Check if overlay already exists
+                            if (overlayContainer.getChildCount() > 0) {
+                                infoOverlay = overlayContainer.getChildAt(0);
+                            } else {
+                                // Inflate and add overlay
+                                android.view.LayoutInflater inflater = android.view.LayoutInflater.from(getContext());
+                                infoOverlay = inflater.inflate(R.layout.backdrop_info_overlay, overlayContainer, false);
+                                overlayContainer.addView(infoOverlay);
                             }
+                        }
+                        
+                        com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter bp2 = com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter.instance(getContext());
+                        boolean isHome = bp2.getCurrentSection() == null || bp2.isHomeSection();
+                        
+                        if (!isHome) {
+                            // For non-Home sections, backdrop is managed by BrowseFragment.updateBackdropVisibility()
+                            // Hide info overlay
+                            if (overlayContainer != null) {
+                                overlayContainer.setVisibility(android.view.View.GONE);
+                            }
+                            return;
+                        }
+                        
+                        Video v = (Video) item;
+                        
+                        // Update backdrop image
+                        if (backdrop != null) {
                             String url = null;
-                            Video v = (Video) item;
                             if (v.backdropImageUrl != null && !v.backdropImageUrl.isEmpty()) {
                                 url = v.backdropImageUrl;
                             } else if (v.videoId != null) {
@@ -629,6 +575,47 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                                 // Keep backdrop area visible; clear image to show base color/gradient
                                 backdrop.setImageDrawable(null);
                             }
+                        }
+                        
+                        // Update TMDB info overlay (title and description)
+                        if (infoOverlay != null && overlayContainer != null && v.videoId != null) {
+                            // Get TMDB detailed info
+                            com.liskovsoft.smartyoutubetv2.tv.services.TMDBDetailedMovieInfo detailedInfo = 
+                                com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache.instance(getContext()).getDetailedMovieInfo(v.videoId);
+                            
+                            android.widget.TextView titleView = infoOverlay.findViewById(R.id.backdrop_movie_title);
+                            android.widget.TextView descriptionView = infoOverlay.findViewById(R.id.backdrop_movie_description);
+                            
+                            if (detailedInfo != null && detailedInfo.title != null) {
+                                // Show overlay with TMDB data
+                                if (titleView != null) {
+                                    titleView.setText(detailedInfo.title);
+                                }
+                                if (descriptionView != null) {
+                                    if (detailedInfo.overview != null && !detailedInfo.overview.isEmpty()) {
+                                        descriptionView.setText(detailedInfo.overview);
+                                        descriptionView.setVisibility(android.view.View.VISIBLE);
+                                    } else {
+                                        descriptionView.setVisibility(android.view.View.GONE);
+                                    }
+                                }
+                                overlayContainer.setVisibility(android.view.View.VISIBLE);
+                            } else {
+                                // Try to use video title if TMDB data not available
+                                if (titleView != null && v.getTitle() != null) {
+                                    titleView.setText(v.getTitle());
+                                    if (descriptionView != null) {
+                                        descriptionView.setVisibility(android.view.View.GONE);
+                                    }
+                                    overlayContainer.setVisibility(android.view.View.VISIBLE);
+                                } else {
+                                    // Hide overlay if no data available
+                                    overlayContainer.setVisibility(android.view.View.GONE);
+                                }
+                            }
+                        } else if (overlayContainer != null) {
+                            // Hide overlay if not available
+                            overlayContainer.setVisibility(android.view.View.GONE);
                         }
                     }
                 }

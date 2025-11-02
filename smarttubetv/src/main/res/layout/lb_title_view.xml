@@ -27,6 +27,7 @@
                   android:layout_height="wrap_content"
                   android:orientation="horizontal"
                   android:layout_gravity="center_vertical|start">
+        <!-- Search and Profile icons moved to side navigation buttons -->
         <androidx.leanback.widget.SearchOrbView
             android:id="@+id/title_orb"
             android:layout_height="wrap_content"
@@ -34,7 +35,7 @@
             android:transitionGroup="true"
             android:layout_gravity="center_vertical|start"
             android:nextFocusRight="@id/account_orb"
-            android:visibility="invisible" />
+            android:visibility="gone" />
 
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.search.LongClickSearchOrbView
             android:id="@+id/account_orb"

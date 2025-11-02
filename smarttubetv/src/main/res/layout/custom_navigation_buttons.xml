@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/navigation_buttons_container"
+    android:layout_width="80dp"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@android:color/transparent"
+    android:paddingTop="180dp"
+    android:paddingStart="0dp"
+    android:paddingEnd="12dp"
+    android:layout_marginStart="-2dp"
+    android:gravity="start">
+
+    <ImageButton
+        android:id="@+id/btn_home"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/button_focus_selector"
+        android:contentDescription="@string/header_home"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:clickable="true" />
+
+    <ImageButton
+        android:id="@+id/btn_playlist"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/button_focus_selector"
+        android:contentDescription="@string/header_playlists"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:clickable="true" />
+
+    <ImageButton
+        android:id="@+id/btn_history"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/button_focus_selector"
+        android:contentDescription="@string/header_history"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:clickable="true" />
+
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/button_focus_selector"
+        android:contentDescription="@string/header_settings"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:clickable="true" />
+
+</LinearLayout>
+

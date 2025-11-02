@@ -172,16 +172,7 @@ public class MovieDetailsActivity extends LeanbackActivity implements MovieDetai
         TextView playButton = findViewById(R.id.play_button);
         if (playButton != null) {
             playButton.setOnClickListener(v -> playMovie());
-            playButton.setTextColor(getResources().getColor(android.R.color.black));
-        }
-
-        // Set up watchlist button
-        TextView watchlistButton = findViewById(R.id.watchlist_button);
-        if (watchlistButton != null) {
-            watchlistButton.setOnClickListener(v -> {
-                // TODO: Implement watchlist functionality
-            });
-            watchlistButton.setTextColor(getResources().getColor(android.R.color.white));
+            // Text color is now handled by selector in layout XML
         }
 
         // Set up trailer button
@@ -190,7 +181,7 @@ public class MovieDetailsActivity extends LeanbackActivity implements MovieDetai
             trailerButton.setOnClickListener(v -> {
                 // TODO: Implement trailer functionality
             });
-            trailerButton.setTextColor(getResources().getColor(android.R.color.black));
+            // Text color is now handled by selector in layout XML
         }
 
         // Set initial focus to play button

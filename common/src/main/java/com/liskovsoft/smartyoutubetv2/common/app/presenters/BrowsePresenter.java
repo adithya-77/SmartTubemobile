@@ -279,10 +279,19 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         int index = 0;
 
         for (BrowseSection section : mErrorSections) {
+            // Filter out update sections from sidebar
+            if (section.getTitle() != null && section.getTitle().toLowerCase().contains("update")) {
+                continue; // Skip update sections
+            }
             getView().addSection(index++, section);
         }
 
         for (BrowseSection section : mSections) { // contains sections and pinned items!
+            // Filter out update sections from sidebar
+            if (section.getTitle() != null && section.getTitle().toLowerCase().contains("update")) {
+                continue; // Skip update sections
+            }
+            
             if (section.getId() == MediaGroup.TYPE_SETTINGS) {
                 section.setEnabled(true);
             }

@@ -24,15 +24,29 @@ public class MovieDetailsVideoActionPresenter {
         return new MovieDetailsVideoActionPresenter(context);
     }
     
-    public static void storeDetailedMovieInfo(String videoId, TMDBDetailedMovieInfo detailedInfo) {
-        if (videoId != null && detailedInfo != null) {
-            sDetailedMovieInfoMap.put(videoId, detailedInfo);
-            
-            // Also store the primary genre in the shared service
-            if (detailedInfo.genres != null && !detailedInfo.genres.isEmpty()) {
-                String primaryGenre = detailedInfo.genres.get(0);
-                GenreService.instance().storeVideoGenre(videoId, primaryGenre);
+    public static void storeDetailedMovieInfo(Context context, String videoId, TMDBDetailedMovieInfo detailedInfo) {
+        if (videoId == null || detailedInfo == null) {
+            return;
+        }
+
+        // Update in-memory cache
+        sDetailedMovieInfoMap.put(videoId, detailedInfo);
+
+        // Persist to SQLite for future sessions
+        try {
+            if (context != null) {
+                com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache
+                        .instance(context.getApplicationContext())
+                        .storeDetailedMovieInfo(videoId, detailedInfo);
             }
+        } catch (Exception e) {
+            android.util.Log.e("MovieDetailsVideoActionPresenter", "Failed to store to SQLite", e);
+        }
+
+        // Also store the primary genre in the shared service
+        if (detailedInfo.genres != null && !detailedInfo.genres.isEmpty()) {
+            String primaryGenre = detailedInfo.genres.get(0);
+            GenreService.instance().storeVideoGenre(videoId, primaryGenre);
         }
     }
     
@@ -98,15 +112,26 @@ public class MovieDetailsVideoActionPresenter {
         Intent intent = new Intent(mContext, MovieDetailsActivity.class);
         
         // Get backdrop URL from SQLite cache if not in memory
-        String backdropUrl = video.backdropImageUrl;
-        if ((backdropUrl == null || backdropUrl.isEmpty()) && video.videoId != null) {
-            backdropUrl = com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache.instance(mContext).getBackdropUrl(video.videoId);
+        final String backdropUrl;
+        String tempBackdrop = video.backdropImageUrl;
+        if ((tempBackdrop == null || tempBackdrop.isEmpty()) && video.videoId != null) {
+            tempBackdrop = com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache.instance(mContext).getBackdropUrl(video.videoId);
+        }
+        backdropUrl = tempBackdrop;
+        
+        // Check if we have detailed movie information (FIRST from memory, THEN from SQLite)
+        TMDBDetailedMovieInfo detailedInfo = sDetailedMovieInfoMap.get(video.videoId);
+        
+        // If not in memory, try to load from SQLite cache
+        if (detailedInfo == null && video.videoId != null) {
+            detailedInfo = com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache.instance(mContext).getDetailedMovieInfo(video.videoId);
+            // Store in memory for faster access next time
+            if (detailedInfo != null) {
+                sDetailedMovieInfoMap.put(video.videoId, detailedInfo);
+            }
         }
         
-        // Check if we have detailed movie information
-        TMDBDetailedMovieInfo detailedInfo = sDetailedMovieInfoMap.get(video.videoId);
         if (detailedInfo != null) {
-            
             // Use detailed TMDB information
             intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_TITLE, detailedInfo.title);
             intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_OVERVIEW, detailedInfo.overview);
@@ -122,27 +147,59 @@ public class MovieDetailsVideoActionPresenter {
             intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_PRODUCTION_COUNTRIES, String.join(", ", detailedInfo.productionCountries));
             intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_SPOKEN_LANGUAGES, String.join(", ", detailedInfo.spokenLanguages));
             intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_CERTIFICATION, detailedInfo.certification != null ? detailedInfo.certification : "");
-        } else {
-            // Fallback to basic video information
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_TITLE, video.getTitle());
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_OVERVIEW, "No overview available");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_POSTER, video.getCardImageUrl() != null ? video.getCardImageUrl() : "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_BACKDROP, backdropUrl != null && !backdropUrl.isEmpty() ? backdropUrl : "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RATING, "N/A");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RELEASE_DATE, "Unknown");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RUNTIME, "Unknown");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_STATUS, "Unknown");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_TAGLINE, "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_GENRES, "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_PRODUCTION_COMPANIES, "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_PRODUCTION_COUNTRIES, "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_SPOKEN_LANGUAGES, "");
-            intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_CERTIFICATION, "");
+
+            intent.putExtra(MovieDetailsActivity.EXTRA_VIDEO_ID, video.videoId);
+            mContext.startActivity(intent);
+            return;
         }
-        
-        intent.putExtra(MovieDetailsActivity.EXTRA_VIDEO_ID, video.videoId);
-        
-        mContext.startActivity(intent);
+
+        // No cached details: fetch from TMDB now and open when ready
+        final Video finalVideo = video;
+        final String[] fetchedBackdrop = new String[1];
+        com.liskovsoft.smartyoutubetv2.tv.services.TMDBImageService tmdbService = new com.liskovsoft.smartyoutubetv2.tv.services.TMDBImageService();
+        final String title = finalVideo.getTitle();
+        final String description = finalVideo.description;
+
+        tmdbService.getMoviePosterByTitle(title, description, new com.liskovsoft.smartyoutubetv2.tv.services.TMDBImageCallback() {
+            @Override
+            public void onImageUrlReceived(String imageUrl) {
+                // not used directly here
+            }
+
+            @Override
+            public void onBackdropUrlReceived(String backdrop) {
+                fetchedBackdrop[0] = backdrop;
+            }
+
+            @Override
+            public void onMovieDetailsReceived(String t, String overview, String poster, String rating, String releaseDate) {
+                Intent i = new Intent(mContext, MovieDetailsActivity.class);
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_TITLE, t != null ? t : title);
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_OVERVIEW, overview != null ? overview : "No overview available");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_POSTER, poster != null ? poster : (finalVideo.getCardImageUrl() != null ? finalVideo.getCardImageUrl() : ""));
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_BACKDROP, fetchedBackdrop[0] != null ? fetchedBackdrop[0] : (backdropUrl != null ? backdropUrl : ""));
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RATING, rating != null ? rating : "N/A");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RELEASE_DATE, releaseDate != null ? releaseDate : "Unknown");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RUNTIME, "Unknown");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_STATUS, "Unknown");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_TAGLINE, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_GENRES, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_PRODUCTION_COMPANIES, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_PRODUCTION_COUNTRIES, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_SPOKEN_LANGUAGES, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_MOVIE_CERTIFICATION, "");
+                i.putExtra(MovieDetailsActivity.EXTRA_VIDEO_ID, finalVideo.videoId);
+                mContext.startActivity(i);
+            }
+
+            @Override
+            public void onDetailedMovieInfoReceived(com.liskovsoft.smartyoutubetv2.tv.services.TMDBDetailedMovieInfo info) {
+                if (info != null) {
+                    // Persist and memoize for future
+                    storeDetailedMovieInfo(mContext, finalVideo.videoId, info);
+                }
+            }
+        });
     }
     
     public static void updateMovieCertification(String videoId, String certification) {

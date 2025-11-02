@@ -26,6 +26,10 @@ public class GridFragmentHelper {
         sMaxColsNum.clear();
     }
 
+    public static void invalidateCaches() {
+        invalidate();
+    }
+
     /**
      * Max number of cards that could fit horizontally
      */

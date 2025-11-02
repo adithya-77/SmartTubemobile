@@ -29,24 +29,63 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.leanback.widget.BrowseRowsFrameLayout
-            android:id="@+id/browse_container_dock"
+        <!-- Backdrop with rows overlapping on top -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <androidx.leanback.widget.ScaleFrameLayout
-                android:id="@+id/scale_frame"
+            <!-- Backdrop - full screen, behind rows -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent">
 
-        </androidx.leanback.widget.BrowseRowsFrameLayout>
+                <ImageView
+                    android:id="@+id/backdrop_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:visibility="visible"
+                    android:contentDescription="@string/browse_backdrop" />
 
-        <!-- Padding needed for shadow -->
+                <!-- Gradient overlay to blend backdrop with rows -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/backdrop_bottom_gradient" />
+
+            </FrameLayout>
+
+            <!-- Rows container - positioned to overlap backdrop, elevated to be on top -->
+            <androidx.leanback.widget.BrowseRowsFrameLayout
+                android:id="@+id/browse_container_dock"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:elevation="4dp"
+                android:clipToPadding="false"
+                android:clipChildren="false">
+
+                <androidx.leanback.widget.ScaleFrameLayout
+                    android:id="@+id/scale_frame"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:clipChildren="false" />
+
+            </androidx.leanback.widget.BrowseRowsFrameLayout>
+
+        </FrameLayout>
+
+        <!-- Headers dock - hidden, replaced by custom navigation buttons -->
         <FrameLayout
             android:id="@+id/browse_headers_dock"
-            android:layout_width="wrap_content"
+            android:layout_width="@dimen/lb_browse_headers_width"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingEnd="50dp" />
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:visibility="gone" />
+        
+        <!-- Custom navigation buttons will be added programmatically to browse_frame -->
     </androidx.leanback.widget.BrowseFrameLayout>
 </FrameLayout>

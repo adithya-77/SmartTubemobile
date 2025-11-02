@@ -42,10 +42,12 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
                 .getFraction(R.fraction.lb_browse_header_unselect_alpha, 1, 1);
         LayoutInflater inflater = (LayoutInflater) viewGroup.getContext()
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mDefaultIcon = new ColorDrawable(ContextCompat.getColor(viewGroup.getContext(), R.color.lb_grey));
+        // Use white for default icon so it's visible on dark backgrounds
+        mDefaultIcon = new ColorDrawable(ContextCompat.getColor(viewGroup.getContext(), android.R.color.white));
 
         View view = inflater.inflate(R.layout.icon_header_item, null);
-        view.setAlpha(mUnselectedAlpha); // Initialize icons to be at half-opacity.
+        // Icons should be fully visible, not transparent
+        view.setAlpha(1.0f);
 
         return new ViewHolder(view);
     }
@@ -65,23 +67,47 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
 
         ImageView iconView = rootView.findViewById(R.id.header_icon);
         if (iconView != null) {
+            // Ensure icon is fully visible
+            iconView.setAlpha(1.0f);
+            // Always apply white color filter for visibility on dark backgrounds
+            iconView.setColorFilter(ContextCompat.getColor(rootView.getContext(), android.R.color.white), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            
             if (mIconUrl != null) {
                 Glide.with(rootView.getContext())
                         .load(mIconUrl)
                         .apply(ViewUtil.glideOptions().error(mDefaultIcon))
-                        .listener(mErrorListener)
-                        .into(iconView);
+                        .listener(new RequestListener<Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                Log.e(TAG, "Glide load failed: " + e);
+                                // Ensure white color filter is applied even on error
+                                iconView.setColorFilter(ContextCompat.getColor(rootView.getContext(), android.R.color.white), 
+                                        android.graphics.PorterDuff.Mode.SRC_IN);
+                                return false;
+                            }
 
-                //ViewUtil.makeMonochrome(iconView);
+                            @Override
+                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                // Re-apply white color filter after image loads
+                                iconView.setColorFilter(ContextCompat.getColor(rootView.getContext(), android.R.color.white), 
+                                        android.graphics.PorterDuff.Mode.SRC_IN);
+                                return false;
+                            }
+                        })
+                        .into(iconView);
             } else {
                 Drawable icon = mResId > 0 ? ContextCompat.getDrawable(rootView.getContext(), mResId) : mDefaultIcon;
                 iconView.setImageDrawable(icon);
+                // White color filter already applied above
             }
         }
 
         TextView label = rootView.findViewById(R.id.header_label);
         if (label != null) {
-            label.setText(headerItem.getName());
+            // Hide text label - icons only
+            label.setVisibility(View.GONE);
+            label.setText(headerItem.getName()); // Keep for accessibility
         }
     }
 
@@ -90,24 +116,23 @@ public class IconHeaderItemPresenter extends RowHeaderPresenter {
         // NOP
     }
 
-    // TODO: This is a temporary fix. Remove me when leanback onCreateViewHolder no longer sets the
-    // mUnselectAlpha, and also assumes the xml inflation will return a RowHeaderView.
+    // Override to ensure icons are always visible, with slight highlight when focused
     @Override
     protected void onSelectLevelChanged(RowHeaderPresenter.ViewHolder holder) {
-        holder.view.setAlpha(mUnselectedAlpha + holder.getSelectLevel() *
-                (1.0f - mUnselectedAlpha));
+        // Keep icons fully visible always
+        holder.view.setAlpha(1.0f);
+        
+        // Adjust icon brightness/scale on focus for better visibility
+        ImageView iconView = holder.view.findViewById(R.id.header_icon);
+        if (iconView != null) {
+            iconView.setAlpha(1.0f); // Always fully opaque
+            // Ensure white color filter is maintained
+            iconView.setColorFilter(ContextCompat.getColor(holder.view.getContext(), android.R.color.white), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            float scale = 0.95f + holder.getSelectLevel() * 0.05f; // Scale from 0.95 to 1.0 for subtle focus effect
+            iconView.setScaleX(scale);
+            iconView.setScaleY(scale);
+        }
     }
 
-    private final RequestListener<Drawable> mErrorListener = new RequestListener<Drawable>() {
-        @Override
-        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-            Log.e(TAG, "Glide load failed: " + e);
-            return false;
-        }
-
-        @Override
-        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-            return false;
-        }
-    };
 }

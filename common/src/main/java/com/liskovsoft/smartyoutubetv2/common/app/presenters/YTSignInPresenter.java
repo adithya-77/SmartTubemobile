@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 
 import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
+import java.util.List;
 import io.reactivex.disposables.Disposable;
 
 public class YTSignInPresenter extends SignInPresenter {
@@ -77,7 +79,18 @@ public class YTSignInPresenter extends SignInPresenter {
                                 getView().close();
                             }
 
-                            AccountSelectionPresenter.instance(getContext()).show(true);
+                            // Auto-select account if there's only one account after sign-in
+                            List<Account> accounts = mService.getSignInService().getAccounts();
+                            if (accounts != null && accounts.size() == 1) {
+                                // Auto-select the only account
+                                AccountSelectionPresenter.instance(getContext()).selectAccount(accounts.get(0));
+                            } else if (accounts != null && accounts.size() > 1) {
+                                // Show selection dialog if multiple accounts
+                                AccountSelectionPresenter.instance(getContext()).show(true);
+                            } else {
+                                // Fallback: show selection dialog anyway
+                                AccountSelectionPresenter.instance(getContext()).show(true);
+                            }
                         }
                  );
     }

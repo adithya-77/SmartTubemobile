@@ -79,11 +79,20 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
     private void appendAccountSelection(List<Account> accounts, AppDialogPresenter settingsPresenter) {
         List<OptionItem> optionItems = new ArrayList<>();
 
+        // Check if any account is currently selected
+        boolean hasSelectedAccount = false;
+        for (Account account : accounts) {
+            if (account.isSelected()) {
+                hasSelectedAccount = true;
+                break;
+            }
+        }
+
         optionItems.add(UiOptionItem.from(
                 getContext().getString(R.string.dialog_account_none), optionItem -> {
                     selectAccount(null);
                     settingsPresenter.closeDialog();
-                }, true
+                }, !hasSelectedAccount // Select "None" only if no account is selected
         ));
 
         for (Account account : accounts) {

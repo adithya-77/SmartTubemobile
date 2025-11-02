@@ -20,19 +20,25 @@
     android:transitionGroup="true"
     android:layout_width="@dimen/lb_browse_headers_width"
     android:layout_height="match_parent"
-    android:paddingEnd="@dimen/lb_browse_header_padding_end"
+    android:paddingStart="8dp"
+    android:paddingEnd="0dp"
+    android:paddingTop="48dp"
     android:elevation="@dimen/lb_browse_headers_z"
+    android:background="@android:color/transparent"
     >
     <androidx.leanback.widget.VerticalGridView
         android:id="@+id/browse_headers"
         android:layout_width="@dimen/lb_browse_headers_width"
         android:layout_height="match_parent"
+        android:background="@android:color/transparent"
         style="?attr/headersVerticalGridStyle"/>
+    <!-- Fade edge hidden for transparent overlay sidebar -->
     <View
         android:id="@+id/fade_out_edge"
         android:layout_alignParentEnd="true"
         android:layout_width="@dimen/lb_browse_header_fading_length"
         android:layout_height="match_parent"
+        android:visibility="gone"
         android:background="@drawable/lb_headers_right_fading" >
     </View>
 </RelativeLayout>

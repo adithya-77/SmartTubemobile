@@ -347,7 +347,7 @@ public class VideoCardPresenter extends LongClickPresenter {
                 @Override
                 public void onDetailedMovieInfoReceived(TMDBDetailedMovieInfo detailedInfo) {
                     if (detailedInfo != null) {
-                        MovieDetailsVideoActionPresenter.storeDetailedMovieInfo(video.videoId, detailedInfo);
+                        MovieDetailsVideoActionPresenter.storeDetailedMovieInfo(context, video.videoId, detailedInfo);
                     }
                 }
             });

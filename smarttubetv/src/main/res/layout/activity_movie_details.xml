@@ -194,7 +194,8 @@
                 android:text="Play"
                 android:drawableLeft="@android:drawable/ic_media_play"
                 android:drawablePadding="8dp"
-                android:drawableTint="#000000"
+                android:drawableTint="@color/button_text_color_selector"
+                android:textColor="@color/button_text_color_selector"
                 android:gravity="center_vertical|left"
                 android:paddingLeft="20dp"
                 android:background="@drawable/play_button_rect_selector"
@@ -212,29 +213,15 @@
                 android:text="Trailer"
                 android:drawableLeft="@drawable/ic_trailer"
                 android:drawablePadding="8dp"
+                android:drawableTint="@color/button_text_color_selector"
+                android:textColor="@color/button_text_color_selector"
                 android:gravity="center_vertical|left"
                 android:paddingLeft="20dp"
                 android:background="@drawable/play_button_rect_selector"
                 android:layout_marginBottom="12dp"
                 android:focusable="true"
                 android:clickable="true"
-                android:nextFocusUp="@+id/play_button"
-                android:nextFocusDown="@+id/watchlist_button" />
-
-            <!-- Add to Watchlist Button -->
-            <TextView
-                android:id="@+id/watchlist_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="+"
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:fontFamily="sans-serif"
-                android:gravity="center"
-                android:background="@drawable/secondary_button_selector"
-                android:focusable="true"
-                android:clickable="true"
-                android:nextFocusUp="@+id/trailer_button" />
+                android:nextFocusUp="@+id/play_button" />
 
         </LinearLayout>
 

@@ -5,6 +5,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.OnItemViewClickedListener;
+import androidx.leanback.widget.OnItemViewSelectedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
@@ -65,6 +66,7 @@ public class SettingsGridFragment extends GridFragment implements SettingsSectio
 
     private void setupEventListeners() {
         setOnItemViewClickedListener(new ItemViewClickedListener());
+        setOnItemViewSelectedListener(new ItemViewSelectedListener());
     }
 
     private void setupAdapter() {
@@ -143,6 +145,21 @@ public class SettingsGridFragment extends GridFragment implements SettingsSectio
                 //}
             } else {
                 Toast.makeText(getContext(), item.toString(), Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private final class ItemViewSelectedListener implements OnItemViewSelectedListener {
+        @Override
+        public void onItemSelected(Presenter.ViewHolder itemViewHolder, Object item,
+                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
+            // Hide sidebar when a settings item is focused
+            try {
+                androidx.fragment.app.Fragment parent = getParentFragment();
+                if (parent instanceof androidx.leanback.app.BrowseSupportFragment) {
+                    ((androidx.leanback.app.BrowseSupportFragment) parent).startHeadersTransition(false);
+                }
+            } catch (Throwable ignored) {
             }
         }
     }

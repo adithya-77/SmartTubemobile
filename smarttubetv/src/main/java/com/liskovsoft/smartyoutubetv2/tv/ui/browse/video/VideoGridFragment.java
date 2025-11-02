@@ -274,6 +274,15 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
         @Override
         public void onItemSelected(Presenter.ViewHolder itemViewHolder, Object item,
                                    RowPresenter.ViewHolder rowViewHolder, Row row) {
+            // Hide sidebar when a card is focused
+            try {
+                androidx.fragment.app.Fragment parent = getParentFragment();
+                if (parent instanceof androidx.leanback.app.BrowseSupportFragment) {
+                    ((androidx.leanback.app.BrowseSupportFragment) parent).startHeadersTransition(false);
+                }
+            } catch (Throwable ignored) {
+            }
+
             if (item instanceof Video) {
                 mBackgroundManager.setBackgroundFrom((Video) item);
 

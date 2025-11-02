@@ -22,13 +22,17 @@
     <dimen name="settings_image_size">24dp</dimen>
     <dimen name="settings_card_width">200dp</dimen>
     <dimen name="channel_card_height">120dp</dimen>
-    <dimen name="card_width">120dp</dimen>
-    <dimen name="card_height">200dp</dimen>
-    <dimen name="shorts_card_width">120dp</dimen>
-    <dimen name="shorts_card_height">200dp</dimen>
+    <!-- Smaller poster cards for denser OTT rails -->
+    <dimen name="card_width">110dp</dimen>
+    <dimen name="card_height">165dp</dimen>
+    <dimen name="shorts_card_width">110dp</dimen>
+    <dimen name="shorts_card_height">165dp</dimen>
     <dimen name="tiny_card_width">100dp</dimen>
     <dimen name="tiny_card_height">60dp</dimen>
     <dimen name="settings_card_height">80dp</dimen>
-    <dimen name="grid_item_horizontal_spacing">8dp</dimen>
+    <dimen name="grid_item_horizontal_spacing">10dp</dimen>
     <dimen name="grid_horizontal_margin">16dp</dimen>
+    <!-- Minimal sidebar width - enough for icons with padding -->
+    <dimen name="lb_browse_headers_width">72dp</dimen>
+    <dimen name="lb_browse_header_padding_end">0dp</dimen>
 </resources>

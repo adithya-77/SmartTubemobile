@@ -540,6 +540,18 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                                 // Inflate and add overlay
                                 android.view.LayoutInflater inflater = android.view.LayoutInflater.from(getContext());
                                 infoOverlay = inflater.inflate(R.layout.backdrop_info_overlay, overlayContainer, false);
+                                // Ensure width constraint is applied programmatically
+                                android.view.ViewGroup.LayoutParams params = infoOverlay.getLayoutParams();
+                                if (params == null) {
+                                    params = new android.widget.FrameLayout.LayoutParams(
+                                        (int) (400 * getResources().getDisplayMetrics().density),
+                                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                                        android.view.Gravity.TOP | android.view.Gravity.START
+                                    );
+                                } else {
+                                    params.width = (int) (400 * getResources().getDisplayMetrics().density);
+                                }
+                                infoOverlay.setLayoutParams(params);
                                 overlayContainer.addView(infoOverlay);
                             }
                         }
@@ -549,17 +561,35 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                         
                         if (!isHome) {
                             // For non-Home sections, backdrop is managed by BrowseFragment.updateBackdropVisibility()
-                            // Hide info overlay
-                            if (overlayContainer != null) {
-                                overlayContainer.setVisibility(android.view.View.GONE);
+                            // Fade out info overlay smoothly
+                            final android.view.ViewGroup finalOverlayContainer = overlayContainer;
+                            if (finalOverlayContainer != null && finalOverlayContainer.getVisibility() == android.view.View.VISIBLE) {
+                                finalOverlayContainer.animate()
+                                        .alpha(0f)
+                                        .setDuration(200)
+                                        .withEndAction(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                finalOverlayContainer.setVisibility(android.view.View.GONE);
+                                                finalOverlayContainer.setAlpha(1f);
+                                            }
+                                        })
+                                        .start();
+                            } else if (finalOverlayContainer != null) {
+                                finalOverlayContainer.setVisibility(android.view.View.GONE);
                             }
                             return;
                         }
                         
                         Video v = (Video) item;
                         
-                        // Update backdrop image
+                        // Update backdrop image with smooth cross-fade transition
                         if (backdrop != null) {
+                            // Enable hardware acceleration for smooth backdrop transitions
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+                                backdrop.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+                            }
+                            
                             String url = null;
                             if (v.backdropImageUrl != null && !v.backdropImageUrl.isEmpty()) {
                                 url = v.backdropImageUrl;
@@ -567,13 +597,29 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                                 url = com.liskovsoft.smartyoutubetv2.tv.services.TMDBDataCache.instance(getContext()).getBackdropUrl(v.videoId);
                             }
                             if (url != null && !url.isEmpty()) {
+                                com.bumptech.glide.request.RequestOptions backdropOptions = new com.bumptech.glide.request.RequestOptions()
+                                        .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                                        .skipMemoryCache(false)
+                                        .centerCrop();
+                                
                                 com.bumptech.glide.Glide.with(getContext())
                                         .load(url)
-                                        .apply(com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil.glideOptions().centerCrop())
+                                        .apply(backdropOptions)
+                                        .transition(com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade(300)) // Smooth 300ms cross-fade
                                         .into(backdrop);
                             } else {
-                                // Keep backdrop area visible; clear image to show base color/gradient
-                                backdrop.setImageDrawable(null);
+                                // Fade out backdrop smoothly
+                                backdrop.animate()
+                                        .alpha(0f)
+                                        .setDuration(200)
+                                        .withEndAction(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                backdrop.setImageDrawable(null);
+                                                backdrop.setAlpha(1f);
+                                            }
+                                        })
+                                        .start();
                             }
                         }
                         
@@ -599,7 +645,14 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                                         descriptionView.setVisibility(android.view.View.GONE);
                                     }
                                 }
+                                // Fade in overlay smoothly
+                                overlayContainer.setAlpha(0f);
                                 overlayContainer.setVisibility(android.view.View.VISIBLE);
+                                overlayContainer.animate()
+                                        .alpha(1f)
+                                        .setDuration(250)
+                                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                                        .start();
                             } else {
                                 // Try to use video title if TMDB data not available
                                 if (titleView != null && v.getTitle() != null) {
@@ -607,15 +660,52 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                                     if (descriptionView != null) {
                                         descriptionView.setVisibility(android.view.View.GONE);
                                     }
+                                    // Fade in overlay smoothly
+                                    overlayContainer.setAlpha(0f);
                                     overlayContainer.setVisibility(android.view.View.VISIBLE);
+                                    overlayContainer.animate()
+                                            .alpha(1f)
+                                            .setDuration(250)
+                                            .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                                            .start();
                                 } else {
-                                    // Hide overlay if no data available
-                                    overlayContainer.setVisibility(android.view.View.GONE);
+                                    // Fade out overlay smoothly if no data available
+                                    final android.view.ViewGroup finalOverlayContainer2 = overlayContainer;
+                                    if (finalOverlayContainer2 != null && finalOverlayContainer2.getVisibility() == android.view.View.VISIBLE) {
+                                        finalOverlayContainer2.animate()
+                                                .alpha(0f)
+                                                .setDuration(200)
+                                                .withEndAction(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        finalOverlayContainer2.setVisibility(android.view.View.GONE);
+                                                        finalOverlayContainer2.setAlpha(1f);
+                                                    }
+                                                })
+                                                .start();
+                                    } else if (finalOverlayContainer2 != null) {
+                                        finalOverlayContainer2.setVisibility(android.view.View.GONE);
+                                    }
                                 }
                             }
                         } else if (overlayContainer != null) {
-                            // Hide overlay if not available
-                            overlayContainer.setVisibility(android.view.View.GONE);
+                            // Fade out overlay smoothly if not available
+                            final android.view.ViewGroup finalOverlayContainer3 = overlayContainer;
+                            if (finalOverlayContainer3.getVisibility() == android.view.View.VISIBLE) {
+                                finalOverlayContainer3.animate()
+                                        .alpha(0f)
+                                        .setDuration(200)
+                                        .withEndAction(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                finalOverlayContainer3.setVisibility(android.view.View.GONE);
+                                                finalOverlayContainer3.setAlpha(1f);
+                                            }
+                                        })
+                                        .start();
+                            } else {
+                                finalOverlayContainer3.setVisibility(android.view.View.GONE);
+                            }
                         }
                     }
                 }

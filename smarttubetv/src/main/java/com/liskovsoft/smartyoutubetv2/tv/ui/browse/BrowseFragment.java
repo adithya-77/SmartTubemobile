@@ -595,17 +595,36 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     }
     
     /**
-     * Update button highlight based on focus
+     * Update button highlight based on focus with smooth animations
      */
     private void updateButtonHighlight(android.widget.ImageButton button, boolean hasFocus) {
         if (button == null) return;
         
-        float scale = hasFocus ? 1.1f : 1.0f;
-        button.setScaleX(scale);
-        button.setScaleY(scale);
+        // Cancel any existing animations
+        button.animate().cancel();
         
+        // Enable hardware acceleration for smooth animations
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+            button.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+        }
+        
+        float scale = hasFocus ? 1.1f : 1.0f;
         float alpha = hasFocus ? 1.0f : 0.7f;
-        button.setAlpha(alpha);
+        
+        // Smooth scale and alpha animation
+        button.animate()
+                .scaleX(scale)
+                .scaleY(scale)
+                .alpha(alpha)
+                .setDuration(150)
+                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                .withEndAction(() -> {
+                    // Reset layer type after animation for better performance
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+                        button.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
+                    }
+                })
+                .start();
     }
     
     /**
@@ -828,14 +847,31 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         android.widget.ImageView backdrop = browseFrame.findViewById(androidx.leanback.R.id.backdrop_image);
         if (backdrop == null) return;
 
-        // Hide backdrop if sidebar is showing
+        // Hide backdrop if sidebar is showing with smooth fade out
         if (isShowingHeaders()) {
-            backdrop.setImageDrawable(null);
-            backdrop.setVisibility(View.INVISIBLE);
+            // Fade out backdrop smoothly
+            backdrop.animate()
+                    .alpha(0f)
+                    .setDuration(200)
+                    .withEndAction(() -> {
+                        backdrop.setImageDrawable(null);
+                        backdrop.setVisibility(View.INVISIBLE);
+                        backdrop.setAlpha(1f);
+                    })
+                    .start();
             // Also hide overlay when sidebar is showing
             if (backdrop.getParent() instanceof android.view.ViewGroup) {
                 android.view.ViewGroup overlayContainer = ((android.view.ViewGroup) backdrop.getParent()).findViewById(androidx.leanback.R.id.backdrop_info_overlay_container);
-                if (overlayContainer != null) {
+                if (overlayContainer != null && overlayContainer.getVisibility() == View.VISIBLE) {
+                    overlayContainer.animate()
+                            .alpha(0f)
+                            .setDuration(200)
+                            .withEndAction(() -> {
+                                overlayContainer.setVisibility(View.GONE);
+                                overlayContainer.setAlpha(1f);
+                            })
+                            .start();
+                } else if (overlayContainer != null) {
                     overlayContainer.setVisibility(View.GONE);
                 }
             }

@@ -11,6 +11,9 @@ import android.os.Looper;
 import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.animation.ObjectAnimator;
+import android.animation.AnimatorSet;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -20,6 +23,7 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -161,33 +165,67 @@ public class VideoCardPresenter extends LongClickPresenter {
     }
 
     private void updateCardSelectionStyle(ComplexImageCardView view, boolean selected) {
+        // Cancel any existing animations
+        view.getMainImageView().animate().cancel();
+        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+            view.animate().cancel();
+        }
+        
+        // Enable hardware acceleration for smooth animations
+        if (VERSION.SDK_INT >= VERSION_CODES.HONEYCOMB) {
+            view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
+        
         if (selected) {
             // Add bold white border for selection
             view.setBackgroundResource(R.drawable.card_selected_border);
-            // Increase elevation when selected
-            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-                view.setElevation(20f);
-            }
             // Ensure the border is visible by setting padding
             view.setPadding(8, 8, 8, 8);
-            // Slightly enlarge the image for focus effect
-            view.getMainImageView().setScaleX(1.05f);
-            view.getMainImageView().setScaleY(1.05f);
-            // Force a redraw to ensure the border is visible
-            view.invalidate();
+            
+            // Smooth scale animation for focus effect
+            AnimatorSet animatorSet = new AnimatorSet();
+            ObjectAnimator scaleX = ObjectAnimator.ofFloat(view.getMainImageView(), "scaleX", 1.0f, 1.05f);
+            ObjectAnimator scaleY = ObjectAnimator.ofFloat(view.getMainImageView(), "scaleY", 1.0f, 1.05f);
+            ObjectAnimator elevation = null;
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                elevation = ObjectAnimator.ofFloat(view, "elevation", 8f, 20f);
+            }
+            
+            animatorSet.setDuration(200); // Smooth 200ms animation
+            animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+            if (elevation != null) {
+                animatorSet.playTogether(scaleX, scaleY, elevation);
+            } else {
+                animatorSet.playTogether(scaleX, scaleY);
+            }
+            animatorSet.start();
         } else {
             // Use rectangular background when not selected
             view.setBackgroundColor(mDefaultBackgroundColor);
-            // Reset elevation and padding
-            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-                view.setElevation(8f);
-            }
             view.setPadding(0, 0, 0, 0);
-            // Reset image scale to normal
-            view.getMainImageView().setScaleX(1.0f);
-            view.getMainImageView().setScaleY(1.0f);
-            // Force a redraw
-            view.invalidate();
+            
+            // Smooth scale animation back to normal
+            AnimatorSet animatorSet = new AnimatorSet();
+            ObjectAnimator scaleX = ObjectAnimator.ofFloat(view.getMainImageView(), "scaleX", view.getMainImageView().getScaleX(), 1.0f);
+            ObjectAnimator scaleY = ObjectAnimator.ofFloat(view.getMainImageView(), "scaleY", view.getMainImageView().getScaleY(), 1.0f);
+            ObjectAnimator elevation = null;
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                elevation = ObjectAnimator.ofFloat(view, "elevation", view.getElevation(), 8f);
+            }
+            
+            animatorSet.setDuration(200); // Smooth 200ms animation
+            animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+            if (elevation != null) {
+                animatorSet.playTogether(scaleX, scaleY, elevation);
+            } else {
+                animatorSet.playTogether(scaleX, scaleY);
+            }
+            animatorSet.start();
+            
+            // Reset layer type after animation
+            if (VERSION.SDK_INT >= VERSION_CODES.HONEYCOMB) {
+                view.postDelayed(() -> view.setLayerType(View.LAYER_TYPE_NONE, null), 250);
+            }
         }
     }
 
@@ -360,18 +398,21 @@ public class VideoCardPresenter extends LongClickPresenter {
     private void loadImageWithGlide(Context context, ComplexImageCardView cardView, Video video, String imageUrl) {
         String finalImageUrl = imageUrl != null ? imageUrl : ClickbaitRemover.updateThumbnail(video, mThumbQuality);
         
+        // Use original glideOptions but enable caching for better performance
+        RequestOptions requestOptions = ViewUtil.glideOptions()
+                .diskCacheStrategy(DiskCacheStrategy.ALL) // Enable disk cache for better performance
+                .skipMemoryCache(false); // Enable memory cache
+        
         Glide.with(context)
                 .load(finalImageUrl)
-                .apply(ViewUtil.glideOptions())
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .skipMemoryCache(false)
+                .apply(requestOptions)
+                .transition(com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade(200)) // Smooth 200ms cross-fade
                 .listener(mErrorListener)
                 .error(
                     Glide.with(context)
                         .load(ClickbaitRemover.updateThumbnail(video, mThumbQuality))
-                        .apply(ViewUtil.glideOptions())
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .skipMemoryCache(false)
+                        .apply(requestOptions)
+                        .transition(com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade(200))
                         .listener(mErrorListener)
                         .error(R.drawable.card_placeholder)
                 )

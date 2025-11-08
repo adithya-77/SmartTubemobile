@@ -7,10 +7,10 @@
     <!-- Change 2: layout_viewType attr is moved out to parent container -->
     <ImageView
         android:id="@+id/main_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:adjustViewBounds="true"
+        android:adjustViewBounds="false"
         tools:ignore="ContentDescription"/>
     <FrameLayout
         android:visibility="gone"
@@ -24,6 +24,7 @@
                     android:layout_alignParentBottom="true"
                     android:layoutDirection="ltr"
                     android:orientation="vertical"
+                    android:visibility="gone"
                     tools:ignore="RtlHardcoded" >
         <TextView android:visibility="invisible"
                   android:id="@+id/extra_text_badge"
@@ -40,7 +41,7 @@
                   style="@style/TextAppearance.Leanback.ImageCardView.Content" />
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.styled.CardProgressBar
             android:id="@+id/clip_progress"
-            android:visibility="visible"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="@dimen/lb_basic_card_info_badge_margin"
             android:max="100"

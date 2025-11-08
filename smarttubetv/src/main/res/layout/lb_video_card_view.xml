@@ -11,6 +11,7 @@
     <androidx.leanback.widget.NonOverlappingFrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         lb:layout_viewType="info">
 
         <RelativeLayout

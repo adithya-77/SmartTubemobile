@@ -107,6 +107,7 @@ public abstract class MaxControlsVideoPlayerGlue<T extends PlayerAdapter>
                 vh.setOnKeyListener(null);
             }
         };
+        rowPresenter.setProgressColor(0xFFE50914); // Netflix red
         rowPresenter.setDescriptionPresenter(detailsPresenter);
         return rowPresenter;
     }

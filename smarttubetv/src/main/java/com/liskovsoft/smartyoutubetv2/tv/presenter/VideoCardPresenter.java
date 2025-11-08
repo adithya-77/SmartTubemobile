@@ -142,14 +142,11 @@ public class VideoCardPresenter extends LongClickPresenter {
     }
 
     private void updateCardBackgroundColor(ComplexImageCardView view, boolean selected) {
-        int backgroundColor = selected ? mSelectedBackgroundColor : mDefaultBackgroundColor;
-
-        // Both background colors should be set because the view's
-        // background is temporarily visible during animations.
-        view.setBackgroundColor(backgroundColor);
+        // Set background to transparent to remove grey bar
+        view.setBackgroundColor(0x00000000); // Transparent
         View infoField = view.findViewById(R.id.info_field);
         if (infoField != null) {
-            infoField.setBackgroundColor(backgroundColor);
+            infoField.setBackgroundColor(0x00000000); // Transparent
         }
 
         // Text color updates removed since we're not showing title/content
@@ -160,8 +157,8 @@ public class VideoCardPresenter extends LongClickPresenter {
         if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
             view.setElevation(8f);
         }
-        // Set rectangular background
-        view.setBackgroundColor(mDefaultBackgroundColor);
+        // Set transparent background to remove grey bar
+        view.setBackgroundColor(0x00000000); // Transparent
     }
 
     private void updateCardSelectionStyle(ComplexImageCardView view, boolean selected) {
@@ -200,8 +197,8 @@ public class VideoCardPresenter extends LongClickPresenter {
             }
             animatorSet.start();
         } else {
-            // Use rectangular background when not selected
-            view.setBackgroundColor(mDefaultBackgroundColor);
+            // Use transparent background when not selected to remove grey bar
+            view.setBackgroundColor(0x00000000); // Transparent
             view.setPadding(0, 0, 0, 0);
             
             // Smooth scale animation back to normal
@@ -237,6 +234,13 @@ public class VideoCardPresenter extends LongClickPresenter {
 
         ComplexImageCardView cardView = (ComplexImageCardView) viewHolder.view;
         Context context = cardView.getContext();
+        
+        // Ensure transparent background on initial bind to remove grey bar
+        cardView.setBackgroundColor(0x00000000); // Transparent
+        View infoField = cardView.findViewById(R.id.info_field);
+        if (infoField != null) {
+            infoField.setBackgroundColor(0x00000000); // Transparent
+        }
 
         // Remove title and content text to use full space for image
         // cardView.setTitleText(video.getTitle());

@@ -12,12 +12,14 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.MovieDetailsView;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
 import androidx.core.content.ContextCompat;
 import android.view.KeyEvent;
+import android.widget.ProgressBar;
 
 public class MovieDetailsActivity extends LeanbackActivity implements MovieDetailsView {
     public static final String EXTRA_MOVIE_TITLE = "movie_title";
@@ -168,6 +170,9 @@ public class MovieDetailsActivity extends LeanbackActivity implements MovieDetai
             }
         }
 
+        // Check video progress and update UI accordingly
+        updateVideoProgress();
+
         // Set up play button
         TextView playButton = findViewById(R.id.play_button);
         if (playButton != null) {
@@ -185,7 +190,59 @@ public class MovieDetailsActivity extends LeanbackActivity implements MovieDetai
         }
 
         // Set initial focus to play button
-        playButton.requestFocus();
+        if (playButton != null) {
+            playButton.requestFocus();
+        }
+    }
+
+    private void updateVideoProgress() {
+        if (mVideoId == null || mVideoId.isEmpty()) {
+            return;
+        }
+
+        // Get video progress from VideoStateService
+        VideoStateService stateService = VideoStateService.instance(this);
+        VideoStateService.State state = stateService.getByVideoId(mVideoId);
+
+        ProgressBar progressBar = findViewById(R.id.video_progress_bar);
+        TextView playButton = findViewById(R.id.play_button);
+
+        if (state != null && state.durationMs > 0) {
+            // Calculate progress percentage
+            float percentWatched = (state.positionMs * 100f) / state.durationMs;
+            
+            // Only show progress if video has been watched (more than 1% and less than 100%)
+            if (percentWatched > 1 && percentWatched < 100) {
+                // Show progress bar and set progress
+                if (progressBar != null) {
+                    progressBar.setVisibility(View.VISIBLE);
+                    progressBar.setProgress((int) percentWatched);
+                }
+
+                // Change play button to Resume
+                if (playButton != null) {
+                    playButton.setText("Resume");
+                }
+            } else {
+                // Hide progress bar if video not watched or fully watched
+                if (progressBar != null) {
+                    progressBar.setVisibility(View.GONE);
+                }
+
+                // Keep play button as Play
+                if (playButton != null) {
+                    playButton.setText("Play");
+                }
+            }
+        } else {
+            // No progress found, hide progress bar and keep Play button
+            if (progressBar != null) {
+                progressBar.setVisibility(View.GONE);
+            }
+            if (playButton != null) {
+                playButton.setText("Play");
+            }
+        }
     }
 
     private void playMovie() {

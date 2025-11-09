@@ -1,0 +1,72 @@
+apply from: '../../SharedModules/constants.gradle'
+apply plugin: 'kotlin-android'
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.liskovsoft.tmdbapi'
+    
+    compileSdkVersion project.ext.compileSdkVersion
+    buildToolsVersion project.ext.buildToolsVersion
+    testOptions.unitTests.includeAndroidResources = true
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    defaultConfig {
+        minSdkVersion project.ext.minSdkVersion
+        targetSdkVersion project.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions "default"
+
+    productFlavors {
+        ststable {}
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    testImplementation 'junit:junit:' + junitVersion
+    testImplementation 'org.robolectric:robolectric:' + robolectricVersion
+
+    implementation project(':commons-io-2.8.0')
+    implementation project(':sharedutils')
+    implementation project(':mediaserviceinterfaces')
+    ststableImplementation project(':common')
+
+    implementation 'com.squareup.retrofit2:retrofit:' + retrofitVersion
+    implementation 'com.squareup.retrofit2:converter-gson:' + retrofitVersion
+    implementation 'com.google.code.gson:gson:' + gsonVersion
+
+    implementation 'com.google.net.cronet:cronet-okhttp:' + cronetOkHttpVersion
+    implementation 'org.chromium.net:cronet-api:' + cronetApiVersion
+
+    implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
+    implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
+
+    implementation 'androidx.annotation:annotation:' + annotationXLibraryVersion
+
+    // Add kotlin support libs
+    implementation 'androidx.core:core-ktx:' + kotlinCoreXVersion
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:' + kotlinVersion
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:' + kotlinVersion
+}

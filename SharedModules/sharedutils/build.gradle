@@ -1,0 +1,87 @@
+apply from: '../constants.gradle'
+apply plugin: 'kotlin-android'
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.liskovsoft.sharedutils'
+    
+    compileSdkVersion project.ext.compileSdkVersion
+    buildToolsVersion project.ext.buildToolsVersion
+    testOptions.unitTests.includeAndroidResources = true
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    defaultConfig {
+        minSdkVersion project.ext.minSdkVersion
+        targetSdkVersion project.ext.targetSdkVersion
+        versionCode 3
+        versionName "0.3.1"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    testImplementation 'junit:junit:' + junitVersion
+    testImplementation 'org.robolectric:robolectric:' + robolectricVersion
+
+    implementation 'androidx.appcompat:appcompat:' + appCompatXLibraryVersion
+    implementation 'androidx.annotation:annotation:' + annotationXLibraryVersion
+
+    implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
+    implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
+
+    implementation 'androidx.core:core-ktx:' + kotlinCoreXVersion
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:' + kotlinVersion
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:' + kotlinxVersion
+
+    implementation 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+    implementation 'com.squareup.okhttp3:logging-interceptor:' + okhttpVersion
+    implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:' + okhttpVersion
+
+    // Cronet dependencies
+    implementation 'org.chromium.net:cronet-api:' + cronetApiVersion
+    implementation 'org.chromium.net:cronet-embedded:' + cronetApiVersion
+
+    // NetCipher for TLS ciphers
+    implementation 'info.guardianproject.netcipher:netcipher:' + netcipherVersion
+
+    implementation 'com.google.code.gson:gson:' + gsonVersion
+
+    // Additional dependencies
+    implementation project(':commons-io-2.8.0')
+    implementation 'androidx.preference:preference:' + preferenceXLibraryVersion
+    implementation 'com.jakewharton:disklrucache:' + diskLruCacheVersion
+    implementation 'com.squareup.okhttp3:okhttp-brotli:' + okhttpBrotliVersion
+    implementation('com.localebro:okhttpprofiler:' + okhttpProfilerVersion) {
+        exclude group: 'com.squareup.okhttp3', module: 'okhttp'
+    }
+
+    implementation 'androidx.work:work-runtime:' + workVersion
+    implementation 'com.google.guava:guava:' + guavaVersion
+
+    implementation 'com.jakewharton:process-phoenix:' + phoenixVersion
+
+    implementation 'androidx.browser:browser:' + browserXVersion
+}
